@@ -11,7 +11,7 @@ import UIKit
 //uitableviewcontroller를 상속하면 대리자 등을 지정해줄 필요가 없다.
 class TodoListViewController : UITableViewController {
 
-    let itemArray = ["Find Mike", "Buy Eggos", "Destroy Demogorgon"]
+    var itemArray = ["Find Mike", "Buy Eggos", "Destroy Demogorgon"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -50,6 +50,30 @@ class TodoListViewController : UITableViewController {
         
         
     }
-
+    
+    //MARK - Add New Items
+    @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
+        
+        var textField = UITextField()
+        
+        let alert = UIAlertController(title: "새로운 할 일 추가", message: "", preferredStyle:.alert)
+        //uialert에 생길 버튼
+        let action = UIAlertAction(title: "할 일 추가", style: .default) { (action) in
+            //버튼이 눌릴 경우 실행할 코드
+            
+            self.itemArray.append(textField.text!)
+            self.tableView.reloadData()
+        }
+        alert.addAction(action)
+        alert.addTextField { (alertTextField) in
+            //유저가 누르기 전까지 텍스트 필드에 보일 회색 글자
+            alertTextField.placeholder = "새 할 일을 입력하세요."
+            textField = alertTextField
+            
+        }
+        
+        present(alert, animated: true, completion: nil)
+    }
+    
 }
 
