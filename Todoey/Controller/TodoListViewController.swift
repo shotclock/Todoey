@@ -12,22 +12,22 @@ import UIKit
 class TodoListViewController : UITableViewController {
 
     var itemArray = [Item]()
-    //유저디폴트는 싱글톤패턴 --> 1개의 인스턴스만 있다. --> 모든 클래스가 하나의 인스턴스를 사용
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+//    //유저디폴트는 싱글톤패턴 --> 1개의 인스턴스만 있다. --> 모든 클래스가 하나의 인스턴스를 사용
+//    //유저디폴트는 한정된 타입만 사용가능 : 커스텀 객체는 이용 불가
+//    let defaults = UserDefaults.standard
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        itemArray.append(newItem)
         
         //데이터타입을 명확히 지정해주기위해서 cast해주어야 한다.
-        if let item = defaults.array(forKey: "ToDoListArray") as? [Item]
-        {
-            itemArray = item
-        }
+//        if let item = defaults.array(forKey: "ToDoListArray") as? [Item]
+//        {
+//            itemArray = item
+//        }
+        loadItems()
     }
 
     
@@ -55,13 +55,12 @@ class TodoListViewController : UITableViewController {
         //print(itemArray[indexPath.row])
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        saveItem()
         
         //cellforrow : 인덱스 패스에 해당되는 셀을 반환하는 메소드
         
         //셀을 선택하면 선택한 셀이 지속적으로 표시되어 있는 것에서 깜빡이는 효과로 바뀌게 된다.
         tableView.deselectRow(at: indexPath, animated: true)
-        //체크마크표시 변경을 시각화하기 위함
-        tableView.reloadData()
     }
     
     //MARK - Add New Items
@@ -74,7 +73,6 @@ class TodoListViewController : UITableViewController {
         let action = UIAlertAction(title: "할 일 추가", style: .default) { (action) in
             //버튼이 눌릴 경우 실행할 코드
             
-            
             let newItem = Item()
             newItem.title = textField.text!
             self.itemArray.append(newItem)
@@ -82,9 +80,10 @@ class TodoListViewController : UITableViewController {
             //plist 파일에 저장되어 있다. -- 오브젝트 및 딕셔너리도 저장 및 불러오기가 가능하다
             // 유저 디폴트를 사용하면 (저장하던가 불러오던가) plist를 불러오게 되는데 이 plist의 크기가 크면 상당히 비효율적이된다. --> 유저디폴트는 데이터베이스가 아니다.
             
-            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
+//            self.defaults.set(self.itemArray, forKey: "ToDoListArray")
+            let encoder = PropertyListEncoder()
             
-            self.tableView.reloadData()
+            self.saveItem()
         }
         alert.addAction(action)
         alert.addTextField { (alertTextField) in
@@ -97,5 +96,29 @@ class TodoListViewController : UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    //MARK - Model Manipulation Method
+    func saveItem(){
+        let encoder = PropertyListEncoder()
+        
+        do{
+            let data = try encoder.encode(itemArray)
+            try data.write(to : dataFilePath!)
+        }catch{
+            print("아이템 배열을 인코드 하는데 실패 \(error)")
+        }
+        self.tableView.reloadData()
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do{
+            itemArray = try decoder.decode([Item].self, from: data)
+            }
+            catch{
+                print("아이템 배열을 디코드 하는데 실패 \(error)")
+            }
+            }
+    }
 }
 
