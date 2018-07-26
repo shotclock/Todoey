@@ -7,12 +7,15 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
 
-    var categoryArray = [Category]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    //오류를 낼 일이 거의 없는 코드에 대해서 간결함을 위해 ! 사용
+    let realm = try! Realm()
+    
+    //result = 배열과 같은 realm의 쿼리 결과값
+    var categoryArray : Results<Category>?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,11 +29,10 @@ class CategoryViewController: UITableViewController {
         var textField = UITextField()
         let alert = UIAlertController(title: "새 카테고리 추가", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "카테고리 추가", style: .default) { (action) in
-            let newCategory = Category(context: self.context)
+            let newCategory = Category()
             newCategory.name = textField.text!
             
-            self.categoryArray.append(newCategory)
-            self.saveCategory()
+            self.save(category: newCategory)
         }
         
         alert.addAction(action)
@@ -43,14 +45,16 @@ class CategoryViewController: UITableViewController {
     
     //MARK: - Tableview Datasource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categoryArray.count
+        //categoryArray가 nil이 아니면 count 반환, nil인 경우 1반환
+        // -> nil coalescing operator
+        return categoryArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
         
-        cell.textLabel?.text = categoryArray[indexPath.row].name
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "카테고리가 없습니다."
         
         return cell
     }
@@ -65,25 +69,23 @@ class CategoryViewController: UITableViewController {
         let destinationVC = segue.destination as! TodoListViewController
         
         if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categoryArray[indexPath.row]
+            //categoryArray가 nil이아닌경우만 실행
+            destinationVC.selectedCategory = categoryArray?[indexPath.row]
         }
     }
     
     //MARK: - Data Manipulation Methods
     func loadCategory(){
-        do{
-            let request : NSFetchRequest<Category> = Category.fetchRequest()
-            try categoryArray = context.fetch(request)
-            
-        }catch{
-            print("카테고리를 불러오는 데 오류 발생 \(error)")
-        }
-        self.tableView.reloadData()
+        //realm에 있는 모든 카테고리 오브젝트 아이템들을 꺼내온다.
+        //save메소드에서 add를 통해 자동으로 update되므로 테이블 뷰에서 보인다.
+        categoryArray = realm.objects(Category.self)
     }
     
-    func saveCategory(){
+    func save(category : Category){
         do{
-            try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         }catch{
             print("카테고리를 저장하는 데 오류 발생 \(error)")
         }
